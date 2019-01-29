@@ -1,7 +1,7 @@
 /**
- * 
- * @param {string} divId div that will render the chart 
- * @param {*} serie data to be plotted 
+ *
+ * @param {string} divId div that will render the chart
+ * @param {*} serie data to be plotted
  * @param {*} _cnf highstock configurantion to override default config
  */
 function SelectableChart(divId, serie,_cnf, onSelectChange) {
@@ -10,7 +10,6 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
     var bindingIdx = {}
     var flag = true;
     var config = {
-
         chart: {
             zoomType: 'x',
             animation: false,
@@ -55,39 +54,6 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
         },
         plotOptions: {
             series: {
-                gapSize: 1,
-                dataGrouping: {
-                    approximation: function (arr) {
-                        if (arr.length > 0) {
-                            var stddev = standardDeviation(arr);
-                            //console.log("std deviation: ",stddev)
-                            var min = arr[0];
-                            arr.forEach(e => { e < min ? min = e : min = min })
-                            //console.log("min: ",min)
-                            var max = arr[0];
-                            arr.forEach(e => { e > max ? max = e : max = max })
-                            var absoluteMax = Math.abs(max)
-                            var absoluteMin = Math.abs(min)
-                            //console.log("max: ",max);
-                            var mean = arr.reduce((acc, i) => acc + i) / arr.length;
-                            //console.log("mean: ",mean)
-                            if ((max-min) > mean + stddev) {
-                                
-                                if (max - mean > mean - min) {
-                                    //console.log("return max")
-                                    return max
-                                }
-                                //console.log("return min")
-                                return min
-                            }
-                            else {
-                                //console.log("return mean")
-                                return mean
-                            }
-                        }
-                        return null;
-                    }
-                },
                 states: {
                     hover: {
                         animation: false,
@@ -129,7 +95,7 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
         var avg = sum / data.length;
         return avg;
     }
-  
+
     function selectPointsByDrag(event) {
         var isShift = window.event.shiftKey;
         var ctrlKey = window.event.ctrlKey;
@@ -150,26 +116,31 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
             return;
         }
         var selectedSerie = seriesOptions[1].data
-        var original = seriesOptions[0].data
         var minIdx = binSearch(selectedSerie, min)
         var maxIdx = binSearch(selectedSerie, max)
-
-        for (var i = minIdx - 1; i <= maxIdx + 1; i++) {
-            var current = selectedSerie[i]
-            if (current && current[1] !== null) {
-                var originalIdx = bindingIdx[current[0]];
-                original[originalIdx][1] = current[1];
+        while (selectedSerie[minIdx] && selectedSerie[minIdx][1] === null) {
+            minIdx++;
+        }
+        while (selectedSerie[maxIdx] && selectedSerie[maxIdx][1] === null) {
+            maxIdx--;
+        }
+        for (var i = minIdx; i <= maxIdx; i++) {
+            if (i > minIdx && i < maxIdx) {
+                //keep series connected
+                var value = seriesOptions[1].data[i][1];
+                if (value !== null){
+                    seriesOptions[1].data[i][1] = null;
+                    seriesOptions[0].data[i][1] = value;
+                }
+            }else{
+                var value = seriesOptions[1].data[i][1];
+                if (value !== null)
+                    seriesOptions[0].data[i][1] = value;
             }
         }
-        if (selectedSerie[minIdx]) {
-            selectedSerie[minIdx][1] = null;
-        }
-        if (selectedSerie[maxIdx]) {
-            selectedSerie[maxIdx][1] = null;
-        }
 
-        selectedSerie.splice(minIdx + 1, maxIdx - minIdx)
-        seriesOptions[1].data = selectedSerie;
+
+
         redrawAllSeries();
     }
 
@@ -177,13 +148,6 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
         var min = event.xAxis[0].min;
         var max = event.xAxis[0].max;
         var originalSerie = seriesOptions[0].data;
-
-        var selecteds = { name: "selecteds", data: [], "color": "#FF0000" }
-        if (seriesOptions[1]) {
-            selecteds = seriesOptions[1];
-        }
-
-
         var minIdx = binSearch(originalSerie, min)
         var maxIdx = binSearch(originalSerie, max)
         while (originalSerie[minIdx][1] === null) {
@@ -193,27 +157,24 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
             maxIdx--;
         }
         for (var i = minIdx; i <= maxIdx; i++) {
-            var current = seriesOptions[0].data[i]
-            if (current[1] === null) {
-                continue;
-            } else {
-                selecteds.data.push([current[0], current[1]]);
-                bindingIdx[current[0]] = i
-                if (i > minIdx && i < maxIdx) {
-                    //keep series connected
+            if (i > minIdx && i < maxIdx) {
+                //keep series connected
+                var value = seriesOptions[0].data[i][1];
+                if(value !== null){
                     seriesOptions[0].data[i][1] = null;
+                    seriesOptions[1].data[i][1] = value;
                 }
+            }else{
+                var value = seriesOptions[0].data[i][1];
+                if(value !== null)
+                    seriesOptions[1].data[i][1] = value;
             }
         }
-        if (!seriesOptions[1]) {
-            seriesOptions.push(selecteds);
-        }
-        //TODO otimizar a questao do q deve e nao deve ser renderizado
         redrawAllSeries()
     }
-    
+
     function showSelecteds(){
-        
+
         if(chart.series.length == 1){
             for(var i=1;i<seriesOptions.length;i++){
                 chart.addSeries(seriesOptions[i],true)
@@ -221,11 +182,11 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
         }
     }
     function hideSelecteds(){
-        
+
         while(chart.series.length > 0){
             chart.series[0].remove();
         }
-        chart.addSeries(seriesOptions[0],true) 
+        chart.addSeries(seriesOptions[0],true)
     }
 
     function redrawAllSeries() {
@@ -259,7 +220,7 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
                 }else{
                     onSelectChange([]);
                 }
-                
+
             }
         },10)
 
@@ -286,7 +247,15 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
         }
         return pivot;
     }
+    var selected = {
+        color:"#FF0000",
+        data:[]
+    }
+    for(var i=0;i<serie.data.length;i++){
+        selected.data.push([serie.data[i][0],null]);
+    }
     seriesOptions.push(serie);
+    seriesOptions.push(selected);
     config.series = seriesOptions
     if(_cnf){
         Object.keys(_cnf).forEach(k=>{
