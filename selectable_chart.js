@@ -54,6 +54,7 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
         },
         plotOptions: {
             series: {
+                lineWidth:1,
                 states: {
                     hover: {
                         animation: false,
@@ -70,31 +71,6 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
 
 
     };
-
-
-    function standardDeviation(values) {
-        var avg = average(values);
-
-        var squareDiffs = values.map(function (value) {
-            var diff = value - avg;
-            var sqrDiff = diff * diff;
-            return sqrDiff;
-        });
-
-        var avgSquareDiff = average(squareDiffs);
-
-        var stdDev = Math.sqrt(avgSquareDiff);
-        return stdDev;
-    }
-
-    function average(data) {
-        var sum = data.reduce(function (sum, value) {
-            return sum + value;
-        }, 0);
-
-        var avg = sum / data.length;
-        return avg;
-    }
 
     function selectPointsByDrag(event) {
         var isShift = window.event.shiftKey;
@@ -190,19 +166,6 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
     }
 
     function redrawAllSeries() {
-        if (seriesOptions[1]) {
-            if (seriesOptions[1].data.length === 0) {
-                seriesOptions.splice(1, 1);
-            }if(seriesOptions[1].data.length > 0 && seriesOptions[1].data.filter(s => s[1] !== null).length === 0){
-                seriesOptions.splice(1, 1);
-            } else {
-                seriesOptions[1].data.sort((a, b) => {
-                    return a[0] - b[0];
-                })
-            }
-
-        }
-
         while (chart.series.length > 0) {
             chart.series[0].remove();
         }
@@ -213,10 +176,12 @@ function SelectableChart(divId, serie,_cnf, onSelectChange) {
 
         }
 
+
+
         setTimeout(()=>{
             if(typeof onSelectChange === "function"){
                 if(seriesOptions[1]){
-                    onSelectChange(seriesOptions[1].data);
+                    onSelectChange(seriesOptions[1].data.filter(s => s[1] !== null));
                 }else{
                     onSelectChange([]);
                 }
